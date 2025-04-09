@@ -10,22 +10,51 @@ class DDMSimulator:
     def setup_params(self):
         st.title("Drift Diffusion Model Simulator")
         
-        # Create two columns for parameters and descriptions
-        col1, col2 = st.columns([1, 1])
+        # Create three columns for parameters, equations, and description
+        col1, col2, col3 = st.columns([1, 1, 1])
         
         with col1:
             st.subheader("Model Parameters")
             self.params = {
-                'drift_rate': st.slider('Drift Rate', -3.0, 3.0, 1.5, 
+                'drift_rate': st.slider('Drift Rate (v)', -3.0, 3.0, 1.5, 
                                       help="Average rate of evidence accumulation (higher = faster decisions)"),
-                'threshold': st.slider('Threshold', 0.5, 5.0, 2.0,
+                'threshold': st.slider('Threshold (a)', 0.5, 5.0, 2.0,
                                      help="Decision boundary (higher = more accurate but slower)"),
-                'bias': st.slider('Starting Bias', -2.0, 2.0, 0.0,
+                'bias': st.slider('Starting Bias (z)', -2.0, 2.0, 0.0,
                                 help="Starting point of evidence (positive = bias toward upper boundary)"),
-                'noise_sd': st.slider('Noise', 0.1, 3.0, 1.0,
+                'noise_sd': st.slider('Noise (σ)', 0.1, 3.0, 1.0,
                                     help="Standard deviation of noise in evidence accumulation"),
-                'dt': 0.05  # Increased time step for faster simulation
+                'dt': 0.05
             }
+            
+        with col2:
+            st.subheader("Model Equations")
+            st.markdown("""
+            **Evidence Accumulation:**
+            
+            \[ dE = v \cdot dt + σ \sqrt{dt} \cdot N(0,1) \]
+            
+            where:
+            - \( E \) = Evidence
+            - \( v \) = Drift rate
+            - \( σ \) = Noise level
+            - \( dt \) = Time step
+            - \( N(0,1) \) = Standard normal noise
+            
+            **Decision Rule:**
+            
+            \[ |E| ≥ a \rightarrow \text{Decision} \]
+            
+            where:
+            - \( a \) = Threshold
+            
+            **Initial Condition:**
+            
+            \[ E(0) = z \]
+            
+            where:
+            - \( z \) = Starting bias
+            """)
 
         # Initialize state if not exists
         if 'time' not in st.session_state:
@@ -36,22 +65,28 @@ class DDMSimulator:
             st.session_state.decision_made = False
             st.session_state.running = False
             
-        with col2:
+        with col3:
             st.subheader("Model Description")
             st.markdown("""
             This simulator shows how decisions might be made in the brain using a 
             Drift Diffusion Model (DDM).
             
-            **How it works:**
-            1. Evidence accumulates over time (drift rate)
-            2. Random noise creates fluctuations
-            3. Decision is made when evidence reaches a threshold
+            **Parameters Explained:**
+            - **Drift Rate (v)**: Average speed of evidence accumulation
+                - Positive = bias toward upper boundary
+                - Negative = bias toward lower boundary
             
-            **The Plot:**
-            - Black line: Evidence accumulation
-            - Red line: Upper threshold
-            - Blue line: Lower threshold
-            - Green dot: Starting point
+            - **Threshold (a)**: How much evidence needed for decision
+                - Higher = more accurate but slower
+                - Lower = faster but more error-prone
+            
+            - **Starting Bias (z)**: Initial evidence level
+                - Positive = head start toward upper boundary
+                - Negative = head start toward lower boundary
+            
+            - **Noise (σ)**: Random fluctuations in evidence
+                - Higher = more random decisions
+                - Lower = more deterministic
             """)
 
     def update_simulation(self):
