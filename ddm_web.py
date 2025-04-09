@@ -43,7 +43,7 @@ class DDMSimulator:
             
             **Decision Rule:**
             
-            $|E| ≥ a \rightarrow \text{Decision}$
+            $|E| ≥ a$ = Decision made
             
             where:
             - $a$ = Threshold
