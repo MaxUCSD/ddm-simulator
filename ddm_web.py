@@ -24,10 +24,17 @@ class DDMSimulator:
                                 help="Starting point of evidence (positive = bias toward upper boundary)"),
                 'noise_sd': st.slider('Noise', 0.1, 3.0, 1.0,
                                     help="Standard deviation of noise in evidence accumulation"),
-                'max_time': st.slider('Max Time (seconds)', 1.0, 10.0, 3.0,
-                                    help="Maximum simulation time"),
                 'dt': 0.01
             }
+
+        # Initialize state if not exists
+        if 'time' not in st.session_state:
+            st.session_state.time = 0
+            st.session_state.evidence = self.params['bias']
+            st.session_state.evidence_history = [self.params['bias']]
+            st.session_state.time_history = [0]
+            st.session_state.decision_made = False
+            st.session_state.running = False
             
         with col2:
             st.subheader("Model Description")
@@ -47,41 +54,34 @@ class DDMSimulator:
             - Green dot: Starting point
             """)
 
-    def run_single_trial(self):
-        # Initialize arrays for storing the simulation data
-        t = np.arange(0, self.params['max_time'], self.params['dt'])
-        evidence = np.zeros_like(t)
-        evidence[0] = self.params['bias']
-        
-        # Run the simulation
-        decision_made = False
-        decision_time = None
-        decision_boundary = None
-        
-        for i in range(1, len(t)):
+    def update_simulation(self):
+        if not st.session_state.decision_made and st.session_state.running:
             # Update evidence
             noise = self.params['noise_sd'] * np.sqrt(self.params['dt']) * np.random.normal()
-            evidence[i] = evidence[i-1] + (self.params['drift_rate'] * self.params['dt'] + noise)
+            new_evidence = st.session_state.evidence + (self.params['drift_rate'] * self.params['dt'] + noise)
+            
+            # Update histories
+            st.session_state.time += self.params['dt']
+            st.session_state.evidence = new_evidence
+            st.session_state.evidence_history.append(new_evidence)
+            st.session_state.time_history.append(st.session_state.time)
             
             # Check for decision
-            if abs(evidence[i]) >= self.params['threshold']:
-                decision_made = True
-                decision_time = t[i]
-                decision_boundary = "Upper" if evidence[i] >= self.params['threshold'] else "Lower"
-                break
-        
-        return t, evidence, decision_made, decision_time, decision_boundary
+            if abs(new_evidence) >= self.params['threshold']:
+                st.session_state.decision_made = True
+                decision_boundary = "Upper" if new_evidence >= self.params['threshold'] else "Lower"
+                st.success(f"Decision made: {decision_boundary} boundary crossed at {st.session_state.time:.2f} seconds")
 
     def plot_trial(self):
-        t, evidence, decision_made, decision_time, decision_boundary = self.run_single_trial()
-        
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(t, evidence, 'k-', label='Evidence', linewidth=2)
+        
+        # Plot current trajectory
+        ax.plot(st.session_state.time_history, st.session_state.evidence_history, 'k-', label='Evidence', linewidth=2)
         ax.axhline(y=self.params['threshold'], color='r', linestyle='-', label='Upper Threshold')
         ax.axhline(y=-self.params['threshold'], color='b', linestyle='-', label='Lower Threshold')
         ax.plot(0, self.params['bias'], 'go', markersize=10, label='Starting Point')
         
-        ax.set_xlim(0, self.params['max_time'])
+        ax.set_xlim(0, 5)  # Fixed time window
         ax.set_ylim(-self.params['threshold']*1.5, self.params['threshold']*1.5)
         ax.set_xlabel('Time (seconds)')
         ax.set_ylabel('Evidence')
@@ -89,20 +89,42 @@ class DDMSimulator:
         ax.legend()
         ax.grid(True)
         
-        st.pyplot(fig)
-        
-        if decision_made:
-            st.success(f"Decision made: {decision_boundary} boundary crossed at {decision_time:.2f} seconds")
-        else:
-            st.warning("No decision reached within the time limit")
+        return fig
 
 def main():
     st.set_page_config(page_title="DDM Simulator", layout="wide")
     
     simulator = DDMSimulator()
     
-    if st.button('Run New Simulation'):
-        simulator.plot_trial()
+    # Control buttons in a row
+    col1, col2, col3 = st.columns([1,1,1])
+    with col1:
+        if st.button('Start' if not st.session_state.running else 'Pause'):
+            st.session_state.running = not st.session_state.running
+    with col2:
+        if st.button('Reset'):
+            st.session_state.time = 0
+            st.session_state.evidence = simulator.params['bias']
+            st.session_state.evidence_history = [simulator.params['bias']]
+            st.session_state.time_history = [0]
+            st.session_state.decision_made = False
+            st.session_state.running = False
+    
+    # Create placeholder for plot
+    plot_placeholder = st.empty()
+    
+    # Main simulation loop
+    while True:
+        simulator.update_simulation()
+        plot_placeholder.pyplot(simulator.plot_trial())
+        time.sleep(0.01)  # Control simulation speed
+        
+        if not st.session_state.running:
+            break
+        
+        if st.session_state.decision_made:
+            st.session_state.running = False
+            break
 
 if __name__ == "__main__":
     main() 
