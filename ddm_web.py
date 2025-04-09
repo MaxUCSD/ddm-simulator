@@ -71,7 +71,7 @@ class DDMSimulator:
             This simulator shows how decisions might be made in the brain using a 
             Drift Diffusion Model (DDM).
             
-            **Parameters Explained:**
+            **Parameters:**
             - **Drift Rate (v)**: Average speed of evidence accumulation
                 - Positive = bias toward upper boundary
                 - Negative = bias toward lower boundary
