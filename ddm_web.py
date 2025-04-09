@@ -32,28 +32,28 @@ class DDMSimulator:
             st.markdown("""
             **Evidence Accumulation:**
             
-            \[ dE = v \cdot dt + σ \sqrt{dt} \cdot N(0,1) \]
+            $dE = v \cdot dt + σ \sqrt{dt} \cdot N(0,1)$
             
             where:
-            - \( E \) = Evidence
-            - \( v \) = Drift rate
-            - \( σ \) = Noise level
-            - \( dt \) = Time step
-            - \( N(0,1) \) = Standard normal noise
+            - $E$ = Evidence
+            - $v$ = Drift rate
+            - $σ$ = Noise level
+            - $dt$ = Time step
+            - $N(0,1)$ = Standard normal noise
             
             **Decision Rule:**
             
-            \[ |E| ≥ a \rightarrow \text{Decision} \]
+            $|E| ≥ a \rightarrow \text{Decision}$
             
             where:
-            - \( a \) = Threshold
+            - $a$ = Threshold
             
             **Initial Condition:**
             
-            \[ E(0) = z \]
+            $E(0) = z$
             
             where:
-            - \( z \) = Starting bias
+            - $z$ = Starting bias
             """)
 
         # Initialize state if not exists
