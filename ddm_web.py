@@ -24,7 +24,7 @@ class DDMSimulator:
                                 help="Starting point of evidence (positive = bias toward upper boundary)"),
                 'noise_sd': st.slider('Noise', 0.1, 3.0, 1.0,
                                     help="Standard deviation of noise in evidence accumulation"),
-                'dt': 0.01
+                'dt': 0.05  # Increased time step for faster simulation
             }
 
         # Initialize state if not exists
@@ -56,21 +56,23 @@ class DDMSimulator:
 
     def update_simulation(self):
         if not st.session_state.decision_made and st.session_state.running:
-            # Update evidence
-            noise = self.params['noise_sd'] * np.sqrt(self.params['dt']) * np.random.normal()
-            new_evidence = st.session_state.evidence + (self.params['drift_rate'] * self.params['dt'] + noise)
-            
-            # Update histories
-            st.session_state.time += self.params['dt']
-            st.session_state.evidence = new_evidence
-            st.session_state.evidence_history.append(new_evidence)
-            st.session_state.time_history.append(st.session_state.time)
-            
-            # Check for decision
-            if abs(new_evidence) >= self.params['threshold']:
-                st.session_state.decision_made = True
-                decision_boundary = "Upper" if new_evidence >= self.params['threshold'] else "Lower"
-                st.success(f"Decision made: {decision_boundary} boundary crossed at {st.session_state.time:.2f} seconds")
+            # Update evidence multiple steps at once for speed
+            for _ in range(5):  # Process 5 steps at once
+                noise = self.params['noise_sd'] * np.sqrt(self.params['dt']) * np.random.normal()
+                new_evidence = st.session_state.evidence + (self.params['drift_rate'] * self.params['dt'] + noise)
+                
+                # Update histories
+                st.session_state.time += self.params['dt']
+                st.session_state.evidence = new_evidence
+                st.session_state.evidence_history.append(new_evidence)
+                st.session_state.time_history.append(st.session_state.time)
+                
+                # Check for decision
+                if abs(new_evidence) >= self.params['threshold']:
+                    st.session_state.decision_made = True
+                    decision_boundary = "Upper" if new_evidence >= self.params['threshold'] else "Lower"
+                    st.success(f"Decision made: {decision_boundary} boundary crossed at {st.session_state.time:.2f} seconds")
+                    break
 
     def plot_trial(self):
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -117,7 +119,7 @@ def main():
     while True:
         simulator.update_simulation()
         plot_placeholder.pyplot(simulator.plot_trial())
-        time.sleep(0.01)  # Control simulation speed
+        time.sleep(0.001)  # Reduced sleep time for faster updates
         
         if not st.session_state.running:
             break
